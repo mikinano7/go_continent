@@ -18,13 +18,10 @@ type MyMainWindow struct {
 	*walk.MainWindow
 	edit *walk.TextEdit
 	api  *anaconda.TwitterApi
-}
-
-var (
-	binaries []string
-	values = url.Values{}
 	modeCtrl bool
-)
+	binaries []string
+	requestParams url.Values
+}
 
 func main() {
 	err := godotenv.Load("go.env")
@@ -40,20 +37,36 @@ func main() {
 		os.Getenv("TWITTER_ACCESS_SECRET2"),
 	)
 
-	mmw := &MyMainWindow{api:api}
+	mmw := &MyMainWindow{
+		api:api,
+		modeCtrl:false,
+		binaries:make([]string, 0),
+		requestParams:url.Values{},
+	}
 	mw := MainWindow{
 		AssignTo: &mmw.MainWindow,
-		Title: "仕事しろ",
+		Title: "txt",
 		Size   : Size{300, 200},
 		Layout: VBox{MarginsZero:true, SpacingZero:true},
 		Children: []Widget{
 			TextEdit{
 				AssignTo: &mmw.edit,
-				OnKeyDown: func(key walk.Key) {
-					if (key == walk.KeyControl) {
-						modeCtrl = true
-					} else if (key == walk.KeyReturn && modeCtrl) {
+				OnKeyUp: func(key walk.Key) {
+					switch key {
+					case walk.KeyControl:
+						mmw.modeCtrl = false
+					}
+				},
+				OnKeyPress: func(key walk.Key) {
+					fmt.Println(mmw.modeCtrl)
+					if (mmw.modeCtrl) {
 						mmw.onClicked()
+					}
+				},
+				OnKeyDown: func(key walk.Key) {
+					switch key {
+					case walk.KeyControl:
+						mmw.modeCtrl = true
 					}
 				},
 			},
@@ -61,13 +74,13 @@ func main() {
 		OnDropFiles: func(path []string) {
 			for _, v := range path {
 				file, _ := os.Open(v)
-				defer file.Close()
 				fi, _ := file.Stat()
 				size := fi.Size()
 
 				data := make([]byte, size)
 				file.Read(data)
-				binaries = append(binaries, base64.StdEncoding.EncodeToString(data))
+				mmw.binaries = append(mmw.binaries, base64.StdEncoding.EncodeToString(data))
+				file.Close()
 			}
 		},
 	}
@@ -80,14 +93,14 @@ func main() {
 
 func (mmw *MyMainWindow) onClicked() {
 	var mediaIds []string
-	receiver := mmw.uploadMedia(binaries)
+	receiver := mmw.uploadMedia(mmw.binaries)
 	for {
 		receive, done := <-receiver
 		if !done {
 			if len(mediaIds) > 0 {
-				values.Add("media_ids", strings.Join(mediaIds, ","))
+				mmw.requestParams.Add("media_ids", strings.Join(mediaIds, ","))
 			}
-			_, err := mmw.api.PostTweet(mmw.edit.Text(), values)
+			_, err := mmw.api.PostTweet(mmw.edit.Text(), mmw.requestParams)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -100,9 +113,8 @@ func (mmw *MyMainWindow) onClicked() {
 
 func reset(mmw *MyMainWindow) {
 	mmw.edit.SetText("")
-	values = url.Values{}
-	binaries = make([]string, 0)
-	modeCtrl = false
+	mmw.requestParams = url.Values{}
+	mmw.binaries = make([]string, 0)
 }
 
 func (mmw *MyMainWindow) uploadMedia(binaries []string) <-chan string {
