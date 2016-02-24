@@ -33,8 +33,8 @@ func main() {
 	anaconda.SetConsumerSecret(os.Getenv("TWITTER_CONSUMER_SECRET"))
 
 	api := anaconda.NewTwitterApi(
-		os.Getenv("TWITTER_ACCESS_TOKEN2"),
-		os.Getenv("TWITTER_ACCESS_SECRET2"),
+		os.Getenv("TWITTER_ACCESS_TOKEN"),
+		os.Getenv("TWITTER_ACCESS_SECRET"),
 	)
 
 	mmw := &MyMainWindow{
@@ -58,8 +58,7 @@ func main() {
 					}
 				},
 				OnKeyPress: func(key walk.Key) {
-					fmt.Println(mmw.modeCtrl)
-					if (mmw.modeCtrl) {
+					if (mmw.modeCtrl && key == walk.KeyReturn) {
 						mmw.onClicked()
 					}
 				},
