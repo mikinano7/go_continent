@@ -18,11 +18,13 @@ type TweetWindow struct {
 	api      *anaconda.TwitterApi
 	modeCtrl bool
 	binaries []string
+	params   url.Values
 }
 
-func (tw *TweetWindow) display() {
+func (tw *TweetWindow) Display() {
 	tw.modeCtrl = false
 	tw.binaries = make([]string, 0)
+	tw.params = url.Values{}
 
 	mw := MainWindow{
 		AssignTo: &tw.MainWindow,
@@ -46,8 +48,8 @@ func (tw *TweetWindow) display() {
 							tw.reset()
 						}
 					case walk.KeyF1:
-						tl := &TimelineWindow{api: tw.api}
-						tl.display()
+						tl := &TimelineWindow{api: tw.api, tweetWindow: tw}
+						tl.Display()
 					}
 				},
 				OnKeyDown: func(key walk.Key) {
@@ -78,17 +80,16 @@ func (tw *TweetWindow) display() {
 	}
 }
 
-func (mmw *TweetWindow) post() {
+func (tw *TweetWindow) post() {
 	var mediaIds []string
-	requestParams := url.Values{}
-	receiver := mmw.uploadMedia(mmw.binaries)
+	receiver := tw.uploadMedia(tw.binaries)
 	for {
 		receive, done := <-receiver
 		if !done {
 			if len(mediaIds) > 0 {
-				requestParams.Add("media_ids", strings.Join(mediaIds, ","))
+				tw.params.Add("media_ids", strings.Join(mediaIds, ","))
 			}
-			_, err := mmw.api.PostTweet(mmw.tweet.Text(), requestParams)
+			_, err := tw.api.PostTweet(tw.tweet.Text(), tw.params)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -98,14 +99,14 @@ func (mmw *TweetWindow) post() {
 	}
 }
 
-func (mmw *TweetWindow) uploadMedia(binaries []string) <-chan string {
+func (tw *TweetWindow) uploadMedia(binaries []string) <-chan string {
 	var wg sync.WaitGroup
 	receiver := make(chan string)
 	go func() {
 		for _, v := range binaries {
 			wg.Add(1)
 			go func(v string) {
-				media, _ := mmw.api.UploadMedia(v)
+				media, _ := tw.api.UploadMedia(v)
 				receiver <- media.MediaIDString
 				wg.Done()
 			}(v)
@@ -116,7 +117,8 @@ func (mmw *TweetWindow) uploadMedia(binaries []string) <-chan string {
 	return receiver
 }
 
-func (mmw *TweetWindow) reset() {
-	mmw.tweet.SetText("")
-	mmw.binaries = make([]string, 0)
+func (tw *TweetWindow) reset() {
+	tw.tweet.SetText("")
+	tw.binaries = make([]string, 0)
+	tw.params = url.Values{}
 }

@@ -23,5 +23,5 @@ func main() {
 	)
 
 	tw := &TweetWindow{api: api}
-	tw.display()
+	tw.Display()
 }

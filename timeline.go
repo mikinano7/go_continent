@@ -11,14 +11,16 @@ import (
 
 type TimelineWindow struct {
 	*walk.MainWindow
-	timeline *walk.ListBox
-	api      *anaconda.TwitterApi
+	tweetWindow *TweetWindow
+	timeline    *walk.ListBox
+	api         *anaconda.TwitterApi
+	tweets      []anaconda.Tweet
 }
 
-func (tlw *TimelineWindow) display() {
+func (tlw *TimelineWindow) Display() {
 	list := make([]string, 0)
-	tl, _ := tlw.api.GetHomeTimeline(url.Values{})
-	for _, tweet := range tl {
+	tlw.tweets, _ = tlw.api.GetHomeTimeline(url.Values{})
+	for _, tweet := range tlw.tweets {
 		list = append(list, tweet.Text)
 	}
 
@@ -31,6 +33,12 @@ func (tlw *TimelineWindow) display() {
 			ListBox{
 				AssignTo: &tlw.timeline,
 				Model:    list,
+				OnKeyPress: func(key walk.Key) {
+					switch key {
+					case walk.KeyReturn:
+						tlw.setReplyStatus()
+					}
+				},
 			},
 		},
 	}
@@ -38,4 +46,11 @@ func (tlw *TimelineWindow) display() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func (tlw *TimelineWindow) setReplyStatus() {
+	idx := tlw.timeline.CurrentIndex()
+	tlw.tweetWindow.reset()
+	tlw.tweetWindow.params = url.Values{"in_reply_to_status_id": []string{tlw.tweets[idx].IdStr}}
+	tlw.tweetWindow.tweet.SetText(fmt.Sprintf("@%s ", tlw.tweets[idx].User.ScreenName))
 }
