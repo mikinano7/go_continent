@@ -38,7 +38,7 @@ func main() {
 		Layout: VBox{MarginsZero:true, SpacingZero:true},
 		Children: []Widget{
 			TextEdit{
-				AssignTo: &mmw.edit,
+				AssignTo: &mmw.tweet,
 				OnKeyUp: func(key walk.Key) {
 					switch key {
 					case walk.KeyControl:
@@ -46,9 +46,15 @@ func main() {
 					}
 				},
 				OnKeyPress: func(key walk.Key) {
-					if (mmw.modeCtrl && key == walk.KeyReturn) {
-						mmw.post()
-						mmw.reset()
+					switch key {
+					case walk.KeyReturn:
+						if (mmw.modeCtrl) {
+							mmw.post()
+							mmw.reset()
+						}
+					case walk.KeyF1:
+						tl := &TimelineWindow{api:api}
+						tl.displayTimeline()
 					}
 				},
 				OnKeyDown: func(key walk.Key) {

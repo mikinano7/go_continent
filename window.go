@@ -11,7 +11,7 @@ import (
 
 type MyMainWindow struct {
 	*walk.MainWindow
-	edit *walk.TextEdit
+	tweet *walk.TextEdit
 	api  *anaconda.TwitterApi
 	modeCtrl bool
 	binaries []string
@@ -25,10 +25,9 @@ func (mmw *MyMainWindow) post() {
 		receive, done := <-receiver
 		if !done {
 			if len(mediaIds) > 0 {
-				url.Values{}
 				requestParams.Add("media_ids", strings.Join(mediaIds, ","))
 			}
-			_, err := mmw.api.PostTweet(mmw.edit.Text(), requestParams)
+			_, err := mmw.api.PostTweet(mmw.tweet.Text(), requestParams)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -57,6 +56,6 @@ func (mmw *MyMainWindow) uploadMedia(binaries []string) <-chan string {
 }
 
 func (mmw *MyMainWindow) reset() {
-	mmw.edit.SetText("")
+	mmw.tweet.SetText("")
 	mmw.binaries = make([]string, 0)
 }
