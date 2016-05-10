@@ -5,27 +5,16 @@ import (
 	"os"
 	"log"
 	"github.com/joho/godotenv"
-	"net/url"
 	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"encoding/base64"
-	"sync"
-	"strings"
 )
-
-type MyMainWindow struct {
-	*walk.MainWindow
-	edit *walk.TextEdit
-	api  *anaconda.TwitterApi
-	modeCtrl bool
-	binaries []string
-	requestParams url.Values
-}
 
 func main() {
 	err := godotenv.Load("go.env")
 	if err != nil {
+		//TODO: なかったらここで作るようにしたい
 		log.Fatal("Error loading .env file")
 	}
 
@@ -41,7 +30,6 @@ func main() {
 		api:api,
 		modeCtrl:false,
 		binaries:make([]string, 0),
-		requestParams:url.Values{},
 	}
 	mw := MainWindow{
 		AssignTo: &mmw.MainWindow,
@@ -59,7 +47,8 @@ func main() {
 				},
 				OnKeyPress: func(key walk.Key) {
 					if (mmw.modeCtrl && key == walk.KeyReturn) {
-						mmw.onClicked()
+						mmw.post()
+						mmw.reset()
 					}
 				},
 				OnKeyDown: func(key walk.Key) {
@@ -88,48 +77,4 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func (mmw *MyMainWindow) onClicked() {
-	var mediaIds []string
-	receiver := mmw.uploadMedia(mmw.binaries)
-	for {
-		receive, done := <-receiver
-		if !done {
-			if len(mediaIds) > 0 {
-				mmw.requestParams.Add("media_ids", strings.Join(mediaIds, ","))
-			}
-			_, err := mmw.api.PostTweet(mmw.edit.Text(), mmw.requestParams)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			reset(mmw)
-			return
-		}
-		mediaIds = append(mediaIds, receive)
-	}
-}
-
-func reset(mmw *MyMainWindow) {
-	mmw.edit.SetText("")
-	mmw.requestParams = url.Values{}
-	mmw.binaries = make([]string, 0)
-}
-
-func (mmw *MyMainWindow) uploadMedia(binaries []string) <-chan string {
-	var wg sync.WaitGroup
-	receiver := make(chan string)
-	go func() {
-		for _, v := range binaries {
-			wg.Add(1)
-			go func(v string) {
-				media, _ := mmw.api.UploadMedia(v)
-				receiver <- media.MediaIDString
-				wg.Done()
-			}(v)
-		}
-		wg.Wait()
-		close(receiver)
-	}()
-	return receiver
 }
