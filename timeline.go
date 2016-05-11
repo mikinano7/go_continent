@@ -12,31 +12,38 @@ import (
 type TimelineWindow struct {
 	*walk.MainWindow
 	tweetWindow *TweetWindow
-	timeline    *walk.ListBox
+	timeline    *walk.TableView
 	api         *anaconda.TwitterApi
 	tweets      []anaconda.Tweet
 }
 
 func (tlw *TimelineWindow) Display() {
-	list := make([]string, 0)
-	tlw.tweets, _ = tlw.api.GetHomeTimeline(url.Values{})
-	for _, tweet := range tlw.tweets {
-		list = append(list, tweet.Text)
-	}
+	model := &TweetModel{window: tlw}
+	model.ResetRows()
 
 	mw := MainWindow{
 		AssignTo: &tlw.MainWindow,
-		Title:    "tl",
 		Size:     Size{500, 200},
-		Layout:   VBox{MarginsZero: true, SpacingZero: true},
+		Layout:   VBox{MarginsZero: true},
 		Children: []Widget{
-			ListBox{
-				AssignTo: &tlw.timeline,
-				Model:    list,
+			TableView{
+				AssignTo:              &tlw.timeline,
+				AlternatingRowBGColor: walk.RGB(255, 255, 200),
+				ColumnsOrderable:      false,
+				MultiSelection:        false,
+				LastColumnStretched:   true,
+				Font:                  Font{Family: "Helvetica", PointSize: 10},
+				Columns: []TableViewColumn{
+					{Title: "Name"},
+					{Title: "Tweet"},
+				},
+				Model: model,
 				OnKeyPress: func(key walk.Key) {
 					switch key {
 					case walk.KeyReturn:
 						tlw.setReplyStatus()
+					case walk.KeyF5:
+						model.ResetRows()
 					}
 				},
 			},

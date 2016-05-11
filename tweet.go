@@ -28,7 +28,6 @@ func (tw *TweetWindow) Display() {
 
 	mw := MainWindow{
 		AssignTo: &tw.MainWindow,
-		Title:    "tw",
 		Size:     Size{300, 200},
 		Layout:   VBox{MarginsZero: true, SpacingZero: true},
 		Children: []Widget{
