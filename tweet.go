@@ -6,6 +6,7 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
+	"github.com/lxn/win"
 	"net/url"
 	"os"
 	"strings"
@@ -28,11 +29,17 @@ func (tw *TweetWindow) Display() {
 
 	mw := MainWindow{
 		AssignTo: &tw.MainWindow,
-		Size:     Size{300, 200},
-		Layout:   VBox{MarginsZero: true, SpacingZero: true},
+		Size:     Size{150, 50},
+		Layout: VBox{
+			Margins:     Margins{0, 0, 0, 0},
+			Spacing:     0,
+			MarginsZero: true,
+			SpacingZero: true,
+		},
 		Children: []Widget{
 			TextEdit{
 				AssignTo: &tw.tweet,
+				MaxSize:  Size{300, 100},
 				OnKeyUp: func(key walk.Key) {
 					switch key {
 					case walk.KeyControl:
@@ -73,10 +80,9 @@ func (tw *TweetWindow) Display() {
 		},
 	}
 
-	if _, err := mw.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	mw.Create()
+	tw.removeTitleBar()
+	(*mw.AssignTo).Run()
 }
 
 func (tw *TweetWindow) post() {
@@ -120,4 +126,20 @@ func (tw *TweetWindow) reset() {
 	tw.tweet.SetText("")
 	tw.binaries = make([]string, 0)
 	tw.params = url.Values{}
+}
+
+func (tw *TweetWindow) removeTitleBar() {
+	wb := &tw.MainWindow.WindowBase
+	hWnd := wb.Handle()
+	win.SetWindowLong(
+		hWnd,
+		win.GWL_STYLE,
+		win.GetWindowLong(hWnd, win.GWL_STYLE)-win.WS_SYSMENU-win.WS_THICKFRAME-win.WS_CAPTION,
+	)
+	win.SetWindowPos(
+		hWnd,
+		win.HWND_TOPMOST,
+		0, 0, 0, 0,
+		win.SWP_NOMOVE|win.SWP_NOSIZE|win.SWP_DRAWFRAME,
+	)
 }
