@@ -9,16 +9,16 @@ import (
 	"github.com/lxn/win"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
-	"strconv"
 	"unicode/utf8"
 )
 
 type TweetWindow struct {
 	*walk.MainWindow
 	tweet    *walk.TextEdit
-	count    *walk.ListBox
+	count    *walk.LineEdit
 	api      *anaconda.TwitterApi
 	modeCtrl bool
 	binaries []string
@@ -49,7 +49,7 @@ func (tw *TweetWindow) Display() {
 						tw.modeCtrl = false
 					default:
 						wordCount := utf8.RuneCountInString(tw.tweet.Text())
-						tw.count.SetModel([]string{strconv.Itoa(140 - wordCount)})
+						tw.count.SetText(strconv.Itoa(140 - wordCount))
 					}
 				},
 				OnKeyPress: func(key walk.Key) {
@@ -71,10 +71,10 @@ func (tw *TweetWindow) Display() {
 					}
 				},
 			},
-			ListBox{
-				AssignTo:&tw.count,
-				Model:[]string{strconv.Itoa(140)},
-				Enabled:false,
+			LineEdit{
+				AssignTo: &tw.count,
+				Enabled:  false,
+				Text:     strconv.Itoa(140),
 			},
 		},
 		OnDropFiles: func(path []string) {
