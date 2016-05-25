@@ -2,24 +2,25 @@ package main
 
 import (
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 	"log"
-	"os"
 )
 
 func main() {
-	err := godotenv.Load("go.env")
+	viper.SetConfigFile("./config.json")
+	viper.SetConfigType("json")
+	err := viper.ReadInConfig()
 	if err != nil {
 		//TODO: なかったらここで作るようにしたい
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading config file.")
 	}
 
-	anaconda.SetConsumerKey(os.Getenv("TWITTER_CONSUMER_KEY"))
-	anaconda.SetConsumerSecret(os.Getenv("TWITTER_CONSUMER_SECRET"))
+	anaconda.SetConsumerKey(viper.GetString("twitter.consumer.key"))
+	anaconda.SetConsumerSecret(viper.GetString("twitter.consumer.secret"))
 
 	api := anaconda.NewTwitterApi(
-		os.Getenv("TWITTER_ACCESS_TOKEN"),
-		os.Getenv("TWITTER_ACCESS_SECRET"),
+		viper.GetString("twitter.credential.token.pn"),
+		viper.GetString("twitter.credential.secret.pn"),
 	)
 
 	tw := &TweetWindow{api: api}
